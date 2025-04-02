@@ -6,6 +6,7 @@ volumes:  # 新增持久化存储声明
     prom_data:  # Prometheus 数据卷
     grafana_data:  # Grafana 数据卷
     alertmanager_data:  # Alertmanager 数据卷
+    influxdb_data:   # InfluxDB 数据卷
 
 
 services:
@@ -71,5 +72,31 @@ services:
             - /var/lib/docker/:/var/lib/docker:ro  # 挂载 Docker 数据目录
         ports:
             - "8088:8080"  # 映射主机 8088 到容器 8080（避免端口冲突）
+        networks:
+            - monitor
+
+    influxdb:
+        image: influxdb:1.8
+        container_name: influxdb
+        hostname: influxdb
+        restart: always
+        volumes:
+            - influxdb_data:/var/lib/influxdb
+        environment:
+            - INFLUXDB_DB=jmeter  # 默认数据库
+            - INFLUXDB_USER=admin
+            - INFLUXDB_USER_PASSWORD=admin
+        ports:
+            - "8086:8086"  # 暴露 HTTP API 端口
+        networks:
+            - monitor
+
+    jmeter:  #  JMeter 服务
+        image: alpine/jmeter
+        container_name: jmeter
+        hostname: jmeter
+        restart: on-failure
+        volumes:
+            - ./jmeter-tests:/tests  # 挂载测试脚本目录
         networks:
             - monitor
